@@ -13,8 +13,21 @@ import exceptions.BDException;
 import exceptions.PrestamosException;
 import models.Prestamo;
 
+/**
+ * 
+ * AccesoPrestamo
+ * 
+ * @author AndresCordoba
+ */
 public class AccesoPrestamo {
 
+	/**
+	 * Metodo que omprueba si un libro tiene un prestamo activo
+	 * 
+	 * @param codigoLibro
+	 * @return
+	 * @throws BDException
+	 */
 	private static boolean estaLibroPrestado(int codigoLibro) throws BDException {
 		Connection conexion = null;
 		PreparedStatement ps = null;
@@ -43,6 +56,13 @@ public class AccesoPrestamo {
 		return existe;
 	}
 
+	/**
+	 * Comprueba si un socio tiene actualmente algun libro prestado
+	 * 
+	 * @param codigoSocio
+	 * @return
+	 * @throws BDException
+	 */
 	private static boolean tieneLibroPrestado(int codigoSocio) throws BDException {
 		Connection conexion = null;
 		PreparedStatement ps = null;
@@ -71,7 +91,19 @@ public class AccesoPrestamo {
 		return existe;
 	}
 
-	public static boolean insertarPrestamo(int codigoLibro, int codigoSocio, String fechaInicio)
+	/**
+	 * Inserta un nuevo prestamo en la base de datos si el libro y el socio cumplen
+	 * las condiciones
+	 * 
+	 * @param codigoLibro
+	 * @param codigoSocio
+	 * @param fechaInicio
+	 * @param fechaFin
+	 * @return
+	 * @throws BDException
+	 * @throws PrestamosException
+	 */
+	public static boolean insertarPrestamo(int codigoLibro, int codigoSocio, String fechaInicio, String fechaFin)
 			throws BDException, PrestamosException {
 
 		Connection conexion = null;
@@ -89,17 +121,30 @@ public class AccesoPrestamo {
 
 			conexion = ConfigMySQL.abrirConexion();
 
-			String query = "insert into prestamo (codigo_libro, codigo_socio, fecha_inicio, fecha_devolucion) values (?, ?, ?, null)";
-			ps = conexion.prepareStatement(query);
+			String query = "INSERT INTO prestamo "
+					+ "(codigo_libro, codigo_socio, fecha_inicio, fecha_fin, fecha_devolucion) "
+					+ "VALUES (?, ?, ?, ?, null)";
 
+			ps = conexion.prepareStatement(query);
 			ps.setInt(1, codigoLibro);
 			ps.setInt(2, codigoSocio);
 			ps.setString(3, fechaInicio);
+			ps.setString(4, fechaFin);
 
 			filas = ps.executeUpdate();
+
 		} catch (SQLException e) {
+			e.printStackTrace();
 			throw new PrestamosException(PrestamosException.NO_EXISTE_LIBRO_SOCIO);
 		} finally {
+			try {
+				if (ps != null) {
+					ps.close();
+				}
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+
 			if (conexion != null) {
 				ConfigMySQL.cerrarConexion(conexion);
 			}
@@ -108,6 +153,17 @@ public class AccesoPrestamo {
 		return filas == 1;
 	}
 
+	/**
+	 * Actualiza la fecha de devolución de un prestamo
+	 * 
+	 * @param codigoLibro
+	 * @param codigoSocio
+	 * @param fechaInicio
+	 * @param fechaDevolucion
+	 * @return
+	 * @throws BDException
+	 * @throws PrestamosException
+	 */
 	public static boolean actualizarPrestamo(int codigoLibro, int codigoSocio, String fechaInicio,
 			String fechaDevolucion) throws BDException, PrestamosException {
 
@@ -150,6 +206,16 @@ public class AccesoPrestamo {
 		return filas == 1;
 	}
 
+	/**
+	 * Metodo para eliminar un prestamo
+	 * 
+	 * @param codigoLibro
+	 * @param codigoSocio
+	 * @param fechaInicio
+	 * @return
+	 * @throws BDException
+	 * @throws PrestamosException
+	 */
 	public static boolean eliminarPrestamo(int codigoLibro, int codigoSocio, String fechaInicio)
 			throws BDException, PrestamosException {
 
@@ -183,6 +249,13 @@ public class AccesoPrestamo {
 		return filas == 1;
 	}
 
+	/**
+	 * Consulta y devuelve todos los prestamos almacenados en la base de datos
+	 * 
+	 * @return
+	 * @throws BDException
+	 * @throws PrestamosException
+	 */
 	public static ArrayList<Prestamo> consultarTodosPrestamos() throws BDException, PrestamosException {
 		ArrayList<Prestamo> prestamos = new ArrayList<>();
 		Connection conexion = null;
@@ -215,6 +288,13 @@ public class AccesoPrestamo {
 		return prestamos;
 	}
 
+	/**
+	 * Consulta y devuelve todos los prestamos que todavia no han sido devueltos
+	 * 
+	 * @return
+	 * @throws BDException
+	 * @throws PrestamosException
+	 */
 	public static ArrayList<Prestamo> consultarLosPrestamosNoDevueltos() throws BDException, PrestamosException {
 		ArrayList<Prestamo> prestamos = new ArrayList<>();
 		Connection conexion = null;
@@ -247,6 +327,15 @@ public class AccesoPrestamo {
 		return prestamos;
 	}
 
+	/**
+	 * Consulta los prestamos realizados en una fecha concreta y muestra sus datos
+	 * junto con la devolucion
+	 * 
+	 * @param fechaInicio
+	 * @return
+	 * @throws BDException
+	 * @throws PrestamosException
+	 */
 	public static ArrayList<String> consultarPrestamosConFechaDevolucion(String fechaInicio)
 			throws BDException, PrestamosException {
 
