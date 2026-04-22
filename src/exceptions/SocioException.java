@@ -20,6 +20,9 @@ package exceptions;
 		public static final String ERROR_SOCIO_PRESTAMO =
 				"El socio está referenciado en un préstamo.";
 		
+		public static final String ERROR_SOCIO_NO_TIENEN_PRESTAMO =
+				"Ningun socio tiene préstamos.";
+		
 		public SocioException(String mensaje) {
 			super(mensaje);
 		}
