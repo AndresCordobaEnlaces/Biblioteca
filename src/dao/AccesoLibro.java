@@ -3,13 +3,13 @@ package dao;
 import config.ConfigMySQL;
 import exceptions.BDException;
 import exceptions.LibroException;
-import models.Libro;
-
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import models.Libro;
 
 public class AccesoLibro {
 
@@ -23,234 +23,482 @@ public class AccesoLibro {
     }
 
     /**
-     * Abre conexión a la base de datos.
+     * Devuelve true si el libro tiene prestamos asociados.
      *
      * @author Dan Bolocan
      */
-    private static Connection conexion() throws BDException {
-        return ConfigMySQL.abrirConexion();
+    private static boolean esPrestatario(int codigo) throws BDException {
+        PreparedStatement ps = null;
+        Connection conexion = null;
+        boolean existe = false;
+
+        try {
+            conexion = ConfigMySQL.abrirConexion();
+            String query =
+                    "select * from libro join prestamo on (libro.codigo = prestamo.codigo_libro) where libro.codigo = ?";
+
+            ps = conexion.prepareStatement(query);
+            ps.setInt(1, codigo);
+
+            ResultSet resultados = ps.executeQuery();
+
+            if (resultados.next()) {
+                existe = true;
+            }
+        } catch (SQLException e) {
+            throw new BDException(BDException.ERROR_QUERY + e.getMessage());
+        } finally {
+            if (conexion != null) {
+                ConfigMySQL.cerrarConexion(conexion);
+            }
+        }
+        return existe;
     }
 
     /**
-     * Comprueba si un ISBN ya existe.
+     * Devuelve true si el ISBN ya existe.
      *
      * @author Dan Bolocan
      */
     private static boolean existeISBN(String isbn) throws BDException {
+        PreparedStatement ps = null;
+        Connection conexion = null;
+        boolean existe = false;
+        String isbnNormalizado = normalizarIsbn(isbn);
 
-        String sql = "select 1 from libro where isbn = ?";
+        try {
+            conexion = ConfigMySQL.abrirConexion();
+            String query = "select * from libro where isbn = ?;";
 
-        try (Connection con = conexion();
-             PreparedStatement ps = con.prepareStatement(sql)) {
+            ps = conexion.prepareStatement(query);
+            ps.setString(1, isbnNormalizado);
 
-            ps.setString(1, normalizarIsbn(isbn));
+            ResultSet resultados = ps.executeQuery();
 
-            try (ResultSet rs = ps.executeQuery()) {
-                return rs.next();
+            if (resultados.next()) {
+                existe = true;
             }
-
         } catch (SQLException e) {
             throw new BDException(BDException.ERROR_QUERY + e.getMessage());
+        } finally {
+            if (conexion != null) {
+                ConfigMySQL.cerrarConexion(conexion);
+            }
         }
+        return existe;
     }
 
     /**
-     * Comprueba si un libro tiene préstamos.
+     * Inserta un libro nuevo en la tabla libro.
      *
      * @author Dan Bolocan
      */
-    private static boolean tienePrestamos(int codigo) throws BDException {
+    public static boolean anadirLibro(
+            String isbn,
+            String titulo,
+            String escritor,
+            int anyo_publicacion,
+            float puntuacion
+    ) throws BDException, LibroException {
+        PreparedStatement ps = null;
+        Connection conexion = null;
+        String isbnNormalizado = normalizarIsbn(isbn);
 
-        String sql = "select 1 from prestamo where codigo_libro = ?";
+        int filas = 0;
 
-        try (Connection con = conexion();
-             PreparedStatement ps = con.prepareStatement(sql)) {
+        try {
+            conexion = ConfigMySQL.abrirConexion();
 
-            ps.setInt(1, codigo);
-
-            try (ResultSet rs = ps.executeQuery()) {
-                return rs.next();
+            if (existeISBN(isbnNormalizado)) {
+                throw new LibroException(LibroException.ERROR_LIBRO_ISBNEXISTE);
             }
 
-        } catch (SQLException e) {
-            throw new BDException(BDException.ERROR_QUERY + e.getMessage());
-        }
-    }
+            String query =
+                    "insert into libro (isbn, titulo, escritor, anio_publicacion, puntuacion ) VALUES (?, ?, ?, ?, ?);";
 
-    /**
-     * Inserta un libro en la base de datos.
-     *
-     * @author Dan Bolocan
-     */
-    public static boolean anadirLibro(String isbn, String titulo, String escritor,
-                                      int anyo_publicacion, float puntuacion)
-            throws BDException, LibroException {
+            ps = conexion.prepareStatement(query);
 
-        if (existeISBN(isbn)) {
-            throw new LibroException(LibroException.ERROR_LIBRO_ISBNEXISTE);
-        }
-
-        String sql =
-                "insert into libro (isbn, titulo, escritor, anio_publicacion, puntuacion) values (?, ?, ?, ?, ?)";
-
-        try (Connection con = conexion();
-             PreparedStatement ps = con.prepareStatement(sql)) {
-
-            ps.setString(1, normalizarIsbn(isbn));
+            ps.setString(1, isbnNormalizado);
             ps.setString(2, titulo);
             ps.setString(3, escritor);
             ps.setInt(4, anyo_publicacion);
             ps.setFloat(5, puntuacion);
 
-            return ps.executeUpdate() == 1;
-
+            filas = ps.executeUpdate();
         } catch (SQLException e) {
             throw new BDException(BDException.ERROR_QUERY + e.getMessage());
+        } finally {
+            if (conexion != null) {
+                ConfigMySQL.cerrarConexion(conexion);
+            }
         }
+
+        return filas == 1;
     }
 
     /**
-     * Borra un libro por código.
+     * Elimina un libro por su codigo.
      *
      * @author Dan Bolocan
      */
     public static boolean borrarLibroPorCodigo(int codigo) throws BDException, LibroException {
+        PreparedStatement ps = null;
+        Connection conexion = null;
 
-        if (tienePrestamos(codigo)) {
-            throw new LibroException(LibroException.ERROR_LIBRO_PRESTAMO);
-        }
+        int filas = 0;
 
-        String sql = "delete from libro where codigo = ?";
+        try {
+            if (esPrestatario(codigo)) {
+                throw new LibroException(LibroException.ERROR_LIBRO_PRESTAMO);
+            }
 
-        try (Connection con = conexion();
-             PreparedStatement ps = con.prepareStatement(sql)) {
+            conexion = ConfigMySQL.abrirConexion();
+            String query = "delete from libro where codigo = ?;";
 
+            ps = conexion.prepareStatement(query);
             ps.setInt(1, codigo);
 
-            int filas = ps.executeUpdate();
+            filas = ps.executeUpdate();
 
             if (filas == 0) {
                 throw new LibroException(LibroException.ERROR_NOLIBRO);
             }
-
-            return true;
-
         } catch (SQLException e) {
             throw new BDException(BDException.ERROR_QUERY + e.getMessage());
+        } finally {
+            if (conexion != null) {
+                ConfigMySQL.cerrarConexion(conexion);
+            }
         }
+
+        return filas == 1;
     }
 
     /**
-     * Consulta todos los libros.
+     * Consulta todos los libros guardados.
      *
      * @author Dan Bolocan
      */
     public static ArrayList<Libro> consultarLibros() throws BDException, LibroException {
+        ArrayList<Libro> listaLibros = new ArrayList<Libro>();
 
-        ArrayList<Libro> lista = new ArrayList<>();
+        PreparedStatement ps = null;
+        Connection conexion = null;
 
-        String sql = "select * from libro";
+        try {
+            conexion = ConfigMySQL.abrirConexion();
+            String query = "select * from libro;";
 
-        try (Connection con = conexion();
-             PreparedStatement ps = con.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
+            ps = conexion.prepareStatement(query);
 
-            while (rs.next()) {
-                lista.add(mapLibro(rs));
+            ResultSet resultados = ps.executeQuery();
+
+            while (resultados.next()) {
+                int codigo = resultados.getInt("codigo");
+                String isbn = resultados.getString("isbn");
+                String titulo = resultados.getString("titulo");
+                String escritor = resultados.getString("escritor");
+                int anyo_publicacion = resultados.getInt("anio_publicacion");
+                float puntuacion = resultados.getFloat("puntuacion");
+
+                Libro libro = new Libro(codigo, isbn, titulo, escritor, anyo_publicacion, puntuacion);
+
+                listaLibros.add(libro);
             }
-
+            if (listaLibros.isEmpty()) {
+                throw new LibroException(LibroException.ERROR_LIBRO_BDEmpty);
+            }
         } catch (SQLException e) {
             throw new BDException(BDException.ERROR_QUERY + e.getMessage());
+        } finally {
+            if (conexion != null) {
+                ConfigMySQL.cerrarConexion(conexion);
+            }
         }
-
-        if (lista.isEmpty()) {
-            throw new LibroException(LibroException.ERROR_LIBRO_BDEmpty);
-        }
-
-        return lista;
+        return listaLibros;
     }
 
     /**
-     * Consulta libros por escritor ordenados por puntuación.
+     * Busca libros por escritor y los ordena por puntuacion descendente.
      *
      * @author Dan Bolocan
      */
-    public static ArrayList<Libro> consultarPorEscritor(String escritor)
-            throws BDException, LibroException {
+    public static ArrayList<Libro> consultarLibrosOrdenados(String escritor) throws BDException, LibroException {
+        escritor = escritor.toLowerCase();
 
-        ArrayList<Libro> lista = new ArrayList<>();
+        ArrayList<Libro> listaLibros = new ArrayList<Libro>();
 
-        String sql = "select * from libro where lower(escritor) like ? order by puntuacion desc";
+        PreparedStatement ps = null;
+        Connection conexion = null;
 
-        try (Connection con = conexion();
-             PreparedStatement ps = con.prepareStatement(sql)) {
+        try {
+            conexion = ConfigMySQL.abrirConexion();
+            String query = "select * from libro where lower(escritor) like ? order by puntuacion desc;";
 
-            ps.setString(1, "%" + escritor.toLowerCase() + "%");
+            ps = conexion.prepareStatement(query);
+            ps.setString(1, "%" + escritor + "%");
 
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    lista.add(mapLibro(rs));
-                }
+            ResultSet resultados = ps.executeQuery();
+
+            while (resultados.next()) {
+                int codigo = resultados.getInt("codigo");
+                String isbn = resultados.getString("isbn");
+                String titulo = resultados.getString("titulo");
+                String escritor_libro = resultados.getString("escritor");
+                int anyo_publicacion = resultados.getInt("anio_publicacion");
+                float puntuacion = resultados.getFloat("puntuacion");
+
+                Libro libro = new Libro(codigo, isbn, titulo, escritor_libro, anyo_publicacion, puntuacion);
+
+                listaLibros.add(libro);
             }
-
+            if (listaLibros.isEmpty()) {
+                throw new LibroException(LibroException.ERROR_LIBRO_NOESCRITOR);
+            }
         } catch (SQLException e) {
             throw new BDException(BDException.ERROR_QUERY + e.getMessage());
+        } finally {
+            if (conexion != null) {
+                ConfigMySQL.cerrarConexion(conexion);
+            }
         }
-
-        if (lista.isEmpty()) {
-            throw new LibroException(LibroException.ERROR_LIBRO_NOESCRITOR);
-        }
-
-        return lista;
+        return listaLibros;
     }
 
     /**
-     * Consulta libros sin préstamos.
+     * Consulta los libros que nunca se han prestado.
      *
      * @author Dan Bolocan
      */
-    public static ArrayList<Libro> consultarSinPrestamos()
-            throws BDException, LibroException {
+    public static ArrayList<Libro> consultarLibrosNoPrestados() throws BDException, LibroException {
+        ArrayList<Libro> listaLibros = new ArrayList<Libro>();
 
-        ArrayList<Libro> lista = new ArrayList<>();
+        PreparedStatement ps = null;
+        Connection conexion = null;
 
-        String sql =
-                "select l.* from libro l " +
-                        "left join prestamo p on l.codigo = p.codigo_libro " +
-                        "where p.codigo_libro is null";
+        try {
+            conexion = ConfigMySQL.abrirConexion();
+            String query =
+                    "select distinct l.codigo, l.isbn, l.titulo, l.escritor, l.anio_publicacion, l.puntuacion from libro l left join prestamo p on l.codigo = p.codigo_libro where p.codigo_libro is null;";
 
-        try (Connection con = conexion();
-             PreparedStatement ps = con.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
+            ps = conexion.prepareStatement(query);
 
-            while (rs.next()) {
-                lista.add(mapLibro(rs));
+            ResultSet resultados = ps.executeQuery();
+
+            while (resultados.next()) {
+                int codigo = resultados.getInt("codigo");
+                String isbn = resultados.getString("isbn");
+                String titulo = resultados.getString("titulo");
+                String escritor_libro = resultados.getString("escritor");
+                int anyo_publicacion = resultados.getInt("anio_publicacion");
+                float puntuacion = resultados.getFloat("puntuacion");
+
+                Libro libro = new Libro(codigo, isbn, titulo, escritor_libro, anyo_publicacion, puntuacion);
+
+                listaLibros.add(libro);
             }
-
+            if (listaLibros.isEmpty()) {
+                throw new LibroException(LibroException.ERROR_LIBRO_NOPRESTADO);
+            }
         } catch (SQLException e) {
             throw new BDException(BDException.ERROR_QUERY + e.getMessage());
+        } finally {
+            if (conexion != null) {
+                ConfigMySQL.cerrarConexion(conexion);
+            }
         }
-
-        if (lista.isEmpty()) {
-            throw new LibroException(LibroException.ERROR_LIBRO_NOPRESTADO);
-        }
-
-        return lista;
+        return listaLibros;
     }
 
     /**
-     * Mapea ResultSet a Libro.
+     * Consulta libros devueltos en una fecha concreta.
      *
      * @author Dan Bolocan
      */
-    private static Libro mapLibro(ResultSet rs) throws SQLException {
-        return new Libro(
-                rs.getInt("codigo"),
-                rs.getString("isbn"),
-                rs.getString("titulo"),
-                rs.getString("escritor"),
-                rs.getInt("anio_publicacion"),
-                rs.getFloat("puntuacion")
-        );
+    public static ArrayList<Libro> consultarLibrosDevueltos(String fecha_devolucion) throws BDException, LibroException {
+        ArrayList<Libro> listaLibros = new ArrayList<Libro>();
+
+        PreparedStatement ps = null;
+        Connection conexion = null;
+
+        try {
+            conexion = ConfigMySQL.abrirConexion();
+
+            String query =
+                    "select l.codigo, l.isbn, l.titulo, l.escritor, l.anio_publicacion, l.puntuacion from libro l left join prestamo p on l.codigo = p.codigo_libro where p.fecha_devolucion = ?;";
+
+            ps = conexion.prepareStatement(query);
+            ps.setString(1, fecha_devolucion);
+
+            ResultSet resultados = ps.executeQuery();
+
+            while (resultados.next()) {
+                int codigo = resultados.getInt("codigo");
+                String isbn = resultados.getString("isbn");
+                String titulo = resultados.getString("titulo");
+                String escritor_libro = resultados.getString("escritor");
+                int anyo_publicacion = resultados.getInt("anio_publicacion");
+                float puntuacion = resultados.getFloat("puntuacion");
+
+                Libro libro = new Libro(codigo, isbn, titulo, escritor_libro, anyo_publicacion, puntuacion);
+
+                listaLibros.add(libro);
+            }
+
+            if (listaLibros.isEmpty()) {
+                throw new LibroException(LibroException.ERROR_LIBRO_NODEVUELTO);
+            }
+        } catch (SQLException e) {
+            throw new BDException(BDException.ERROR_QUERY + e.getMessage());
+        } finally {
+            if (conexion != null) {
+                ConfigMySQL.cerrarConexion(conexion);
+            }
+        }
+        return listaLibros;
+    }
+
+    /**
+     * Consulta un libro por codigo.
+     *
+     * @author Dan Bolocan
+     */
+    public static Libro consultarLibroPorCodigo(int codigoLibro) throws BDException {
+        Libro libro = null;
+
+        Connection conexion = null;
+        try {
+            conexion = ConfigMySQL.abrirConexion();
+
+            String query = "select * from libro where codigo = ?";
+            PreparedStatement ps = conexion.prepareStatement(query);
+            ps.setInt(1, codigoLibro);
+
+            ResultSet resultados = ps.executeQuery();
+
+            if (resultados.next()) {
+                libro = new Libro(
+                        codigoLibro,
+                        resultados.getString("isbn"),
+                        resultados.getString("titulo"),
+                        resultados.getString("escritor"),
+                        resultados.getInt("anio_publicacion"),
+                        resultados.getFloat("puntuacion")
+                );
+            }
+        } catch (SQLException e) {
+            throw new BDException(BDException.ERROR_QUERY + e.getMessage());
+        } finally {
+            if (conexion != null) {
+                ConfigMySQL.cerrarConexion(conexion);
+            }
+        }
+
+        return libro;
+    }
+
+    /**
+     * Consulta el libro o libros menos prestados.
+     *
+     * @author Dan Bolocan
+     */
+    public static LinkedHashMap<Libro, Integer> consultarMenorLibroPrestado() throws BDException, LibroException {
+        LinkedHashMap<Libro, Integer> listaLibros = new LinkedHashMap<Libro, Integer>();
+
+        PreparedStatement ps = null;
+        Connection conexion = null;
+
+        try {
+            conexion = ConfigMySQL.abrirConexion();
+
+            String query =
+                    "select l.codigo, l.isbn, l.titulo, l.escritor, l.anio_publicacion, l.puntuacion, count(p.codigo_libro) as veces_prestado " +
+                            "from libro l left join prestamo p on l.codigo = p.codigo_libro " +
+                            "group by l.codigo " +
+                            "having count(p.codigo_libro) = (select min(cantidad) " +
+                            "from (select count(*) as cantidad from prestamo group by codigo_libro) as prestamo_count) " +
+                            "order by veces_prestado ASC;";
+
+            ps = conexion.prepareStatement(query);
+
+            ResultSet resultados = ps.executeQuery();
+
+            while (resultados.next()) {
+                int codigo = resultados.getInt("codigo");
+                String isbn = resultados.getString("isbn");
+                String titulo = resultados.getString("titulo");
+                String escritor_libro = resultados.getString("escritor");
+                int anyo_publicacion = resultados.getInt("anio_publicacion");
+                float puntuacion = resultados.getFloat("puntuacion");
+
+                Libro libro = new Libro(codigo, isbn, titulo, escritor_libro, anyo_publicacion, puntuacion);
+                int vecesPrestado = resultados.getInt("veces_prestado");
+
+                listaLibros.put(libro, vecesPrestado);
+            }
+
+            if (listaLibros.isEmpty()) {
+                throw new LibroException(LibroException.ERROR_LIBRO_BDEmpty);
+            }
+        } catch (SQLException e) {
+            throw new BDException(BDException.ERROR_QUERY + e.getMessage());
+        } finally {
+            if (conexion != null) {
+                ConfigMySQL.cerrarConexion(conexion);
+            }
+        }
+        return listaLibros;
+    }
+
+    /**
+     * Consulta libros prestados menos veces que la media.
+     *
+     * @author Dan Bolocan
+     */
+    public static LinkedHashMap<Libro, Integer> consultarLibroPrestadoInferiorMedia() throws BDException, LibroException {
+        LinkedHashMap<Libro, Integer> listaLibros = new LinkedHashMap<Libro, Integer>();
+
+        PreparedStatement ps = null;
+        Connection conexion = null;
+
+        try {
+            conexion = ConfigMySQL.abrirConexion();
+
+            String query =
+                    "select l.codigo, l.isbn, l.titulo, l.escritor, l.anio_publicacion, l.puntuacion, count(p.codigo_libro) as veces_prestado " +
+                            "from libro l join prestamo p on l.codigo = p.codigo_libro " +
+                            "group by l.codigo " +
+                            "having count(p.codigo_libro) < (select avg(cantidad) " +
+                            "from (select count(*) as cantidad from prestamo group by codigo_libro) as prestamo_count);";
+
+            ps = conexion.prepareStatement(query);
+
+            ResultSet resultados = ps.executeQuery();
+
+            while (resultados.next()) {
+                int codigo = resultados.getInt("codigo");
+                String isbn = resultados.getString("isbn");
+                String titulo = resultados.getString("titulo");
+                String escritor_libro = resultados.getString("escritor");
+                int anyo_publicacion = resultados.getInt("anio_publicacion");
+                float puntuacion = resultados.getFloat("puntuacion");
+
+                Libro libro = new Libro(codigo, isbn, titulo, escritor_libro, anyo_publicacion, puntuacion);
+                int vecesPrestado = resultados.getInt("veces_prestado");
+
+                listaLibros.put(libro, vecesPrestado);
+            }
+
+            if (listaLibros.isEmpty()) {
+                throw new LibroException(LibroException.ERROR_LIBRO_BDEmpty);
+            }
+        } catch (SQLException e) {
+            throw new BDException(BDException.ERROR_QUERY + e.getMessage());
+        } finally {
+            if (conexion != null) {
+                ConfigMySQL.cerrarConexion(conexion);
+            }
+        }
+        return listaLibros;
     }
 }
