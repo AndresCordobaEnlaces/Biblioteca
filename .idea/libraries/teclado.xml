@@ -1,9 +1,0 @@
-<component name="libraryTable">
-  <library name="teclado">
-    <CLASSES>
-      <root url="jar://$PROJECT_DIR$/teclado.jar!/" />
-    </CLASSES>
-    <JAVADOC />
-    <SOURCES />
-  </library>
-</component>
