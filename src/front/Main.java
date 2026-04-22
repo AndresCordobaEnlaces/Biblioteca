@@ -7,15 +7,8 @@ import exceptions.LibroException;
 import models.Libro;
 import regex.FuncionesRegex;
 
-import java.util.ArrayList;
-
 public class Main {
 
-    /**
-     * Punto de entrada del programa.
-     *
-     * @author Dan Bolocan
-     */
     public static void main(String[] args) {
         menuLibros();
     }
@@ -28,13 +21,10 @@ public class Main {
     public static void escribirMenuOpcionesLibro() {
         System.out.println();
         System.out.println("Elige una opción del menu de Libro");
-        System.out.println("0) Salir del programa.");
         System.out.println("1) Insertar un libro en la base de datos");
         System.out.println("2) Eliminar un libro, por código, de la base de datos");
         System.out.println("3) Consultar todos los libros de la base de datos.");
         System.out.println(
-                "4) Consultar varios libros, por escritor, de la base de datos, ordenados por puntuación decendente."
-        );
         System.out.println("5) Consultar los libros no prestados de la base de datos.");
         System.out.println("6) Consultar los libros devueltos, en una fecha, de la base de datos.");
     }
@@ -139,7 +129,6 @@ public class Main {
                     case 6:
                         System.out.println("Consultar libros devueltos en una fecha...");
                         // Leer fecha de devolucion
-                        String fechaDevolucion = Teclado.leerCadena("Introruce una fecha: ");
                         while (!FuncionesRegex.fechaBien(fechaDevolucion)) {
                             fechaDevolucion = Teclado.leerCadena("Introduce una fecha valida (yyyy-mm-dd): ");
                         }
