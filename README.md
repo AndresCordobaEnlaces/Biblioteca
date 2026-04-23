@@ -1,5 +1,5 @@
-BIBLIOTECA
-Reparto
+##BIBLIOTECA
+##Reparto
 🔵 DAN — Actividad 2x01 (Libros) Primero crea la base de datos (ya que es la rama base):
 
 Crear el archivo biblioteca.db en SQLite con las 3 tablas: libro, socio y préstamo
