@@ -55,6 +55,10 @@ public class DatabaseIntegrationTestRunner {
             seedData();
 
             run("Libros 1 insertar", DatabaseIntegrationTestRunner::testLibrosInsertar);
+            run("Libros no admite ISBN duplicado", DatabaseIntegrationTestRunner::testLibrosIsbnDuplicado);
+            run("Libros no admite anyo invalido", DatabaseIntegrationTestRunner::testLibrosAnyoInvalido);
+            run("Libros no admite puntuacion invalida", DatabaseIntegrationTestRunner::testLibrosPuntuacionInvalida);
+            run("Libros no admite titulo vacio", DatabaseIntegrationTestRunner::testLibrosTituloVacio);
             run("Libros 2 eliminar", DatabaseIntegrationTestRunner::testLibrosEliminar);
             run("Libros 3 consultar todos", DatabaseIntegrationTestRunner::testLibrosConsultarTodos);
             run("Libros 4 consultar por escritor ordenado", DatabaseIntegrationTestRunner::testLibrosPorEscritorOrdenados);
@@ -62,6 +66,10 @@ public class DatabaseIntegrationTestRunner {
             run("Libros 6 devueltos por fecha", DatabaseIntegrationTestRunner::testLibrosDevueltosPorFecha);
 
             run("Socios 1 insertar", DatabaseIntegrationTestRunner::testSociosInsertar);
+            run("Socios no admite DNI invalido", DatabaseIntegrationTestRunner::testSociosDniInvalido);
+            run("Socios no admite telefono invalido", DatabaseIntegrationTestRunner::testSociosTelefonoInvalido);
+            run("Socios no admite correo invalido", DatabaseIntegrationTestRunner::testSociosCorreoInvalido);
+            run("Socios no admite nombre vacio", DatabaseIntegrationTestRunner::testSociosNombreVacio);
             run("Socios 2 eliminar", DatabaseIntegrationTestRunner::testSociosEliminar);
             run("Socios 3 consultar todos", DatabaseIntegrationTestRunner::testSociosConsultarTodos);
             run("Socios 4 por localidad", DatabaseIntegrationTestRunner::testSociosPorLocalidad);
@@ -69,6 +77,9 @@ public class DatabaseIntegrationTestRunner {
             run("Socios 6 por fecha", DatabaseIntegrationTestRunner::testSociosPorFecha);
 
             run("Prestamos 1-6 flujo completo", DatabaseIntegrationTestRunner::testPrestamosFlujoCompleto);
+            run("Prestamos no admite formato de fecha invalido", DatabaseIntegrationTestRunner::testPrestamoFechaInvalida);
+            run("Prestamos bloquea libro ya prestado", DatabaseIntegrationTestRunner::testPrestamoLibroYaPrestado);
+            run("Prestamos bloquea socio con prestamo activo", DatabaseIntegrationTestRunner::testPrestamoSocioConPrestamoActivo);
             run("Prestamos valida fecha fin", DatabaseIntegrationTestRunner::testPrestamoFechaFinAnterior);
             run("Prestamos detecta libro o socio inexistente", DatabaseIntegrationTestRunner::testPrestamoLibroOSocioInexistente);
 
@@ -143,6 +154,48 @@ public class DatabaseIntegrationTestRunner {
         assertTrue(codigo > 0);
     }
 
+    private static void testLibrosIsbnDuplicado() throws Exception {
+        try {
+            AccesoLibro.anadirLibro(libroTopIsbn, "Duplicado " + MARKER, "Autor Duplicado " + MARKER, 2024, 5.0f);
+            throw new AssertionError("se esperaba LibroException");
+        } catch (LibroException e) {
+            assertEquals(LibroException.ERROR_LIBRO_ISBNEXISTE, e.getMessage().replace("Error: ", ""));
+        }
+    }
+
+    private static void testLibrosAnyoInvalido() throws Exception {
+        String isbn = buildValidIsbn13(205);
+
+        try {
+            AccesoLibro.anadirLibro(isbn, "Libro Anyo " + MARKER, "Autor Anyo " + MARKER, 3000, 5.0f);
+            throw new AssertionError("se esperaba LibroException");
+        } catch (LibroException e) {
+            assertEquals(LibroException.ERROR_LIBRO_ANYOINVALIDO, e.getMessage().replace("Error: ", ""));
+        }
+    }
+
+    private static void testLibrosPuntuacionInvalida() throws Exception {
+        String isbn = buildValidIsbn13(206);
+
+        try {
+            AccesoLibro.anadirLibro(isbn, "Libro Puntuacion " + MARKER, "Autor Puntuacion " + MARKER, 2024, 11.0f);
+            throw new AssertionError("se esperaba LibroException");
+        } catch (LibroException e) {
+            assertEquals(LibroException.ERROR_LIBRO_PUNTUACIONINVALIDA, e.getMessage().replace("Error: ", ""));
+        }
+    }
+
+    private static void testLibrosTituloVacio() throws Exception {
+        String isbn = buildValidIsbn13(207);
+
+        try {
+            AccesoLibro.anadirLibro(isbn, "   ", "Autor Vacio " + MARKER, 2024, 5.0f);
+            throw new AssertionError("se esperaba LibroException");
+        } catch (LibroException e) {
+            assertEquals(LibroException.ERROR_LIBRO_TITULOVACIO, e.getMessage().replace("Error: ", ""));
+        }
+    }
+
     private static void testLibrosEliminar() throws Exception {
         String isbn = buildValidIsbn13(202);
         int codigo = insertBookDirect(isbn, "Libro Borrable " + MARKER, "Autor Borrable " + MARKER, 2024, 5.0f);
@@ -191,6 +244,66 @@ public class DatabaseIntegrationTestRunner {
         );
         assertTrue(inserted);
         assertTrue(findSocioCodeByDni(dni) > 0);
+    }
+
+    private static void testSociosDniInvalido() throws Exception {
+        try {
+            AccesoSocio.insertarSocio(
+                    "12345678A",
+                    "Socio DNI " + MARKER,
+                    "Cordoba " + MARKER,
+                    "612345678",
+                    "dni." + MARKER.toLowerCase() + "@mail.com"
+            );
+            throw new AssertionError("se esperaba SocioException");
+        } catch (SocioException e) {
+            assertEquals(SocioException.ERROR_SOCIO_DNIINVALIDO, e.getMessage().replace("Error: ", ""));
+        }
+    }
+
+    private static void testSociosTelefonoInvalido() throws Exception {
+        try {
+            AccesoSocio.insertarSocio(
+                    buildValidDni(10000008),
+                    "Socio Telefono " + MARKER,
+                    "Cordoba " + MARKER,
+                    "512345678",
+                    "telefono." + MARKER.toLowerCase() + "@mail.com"
+            );
+            throw new AssertionError("se esperaba SocioException");
+        } catch (SocioException e) {
+            assertEquals(SocioException.ERROR_SOCIO_TELEFONOINVALIDO, e.getMessage().replace("Error: ", ""));
+        }
+    }
+
+    private static void testSociosCorreoInvalido() throws Exception {
+        try {
+            AccesoSocio.insertarSocio(
+                    buildValidDni(10000009),
+                    "Socio Correo " + MARKER,
+                    "Cordoba " + MARKER,
+                    "612345679",
+                    "correo..malo@mail.com"
+            );
+            throw new AssertionError("se esperaba SocioException");
+        } catch (SocioException e) {
+            assertEquals(SocioException.ERROR_SOCIO_CORREOINVALIDO, e.getMessage().replace("Error: ", ""));
+        }
+    }
+
+    private static void testSociosNombreVacio() throws Exception {
+        try {
+            AccesoSocio.insertarSocio(
+                    buildValidDni(10000010),
+                    "   ",
+                    "Cordoba " + MARKER,
+                    "612345680",
+                    "nombre." + MARKER.toLowerCase() + "@mail.com"
+            );
+            throw new AssertionError("se esperaba SocioException");
+        } catch (SocioException e) {
+            assertEquals(SocioException.ERROR_SOCIO_NOMBREVACIO, e.getMessage().replace("Error: ", ""));
+        }
     }
 
     private static void testSociosEliminar() throws Exception {
@@ -277,6 +390,71 @@ public class DatabaseIntegrationTestRunner {
 
         ArrayList<Prestamo> trasBorrado = AccesoPrestamo.consultarTodosPrestamos();
         assertNotContainsPrestamo(trasBorrado, libroId, socioId, "2026-05-01");
+    }
+
+    private static void testPrestamoFechaInvalida() throws Exception {
+        try {
+            AccesoPrestamo.insertarPrestamo(libroLibreId, socioNuncaId, "2026-13-01", "2026-13-10");
+            throw new AssertionError("se esperaba PrestamosException");
+        } catch (PrestamosException e) {
+            assertEquals(PrestamosException.ERROR_FECHA_INVALIDA, e.getMessage().replace("Error: ", ""));
+        }
+    }
+
+    private static void testPrestamoLibroYaPrestado() throws Exception {
+        String isbn = buildValidIsbn13(208);
+        String dni1 = buildValidDni(10000011);
+        String dni2 = buildValidDni(10000012);
+
+        int libroId = insertBookDirect(isbn, "Libro Activo " + MARKER, "Autor Activo " + MARKER, 2024, 5.5f);
+        int socio1Id = insertSocioDirect(
+                dni1,
+                "Eva " + MARKER,
+                "Leon " + MARKER,
+                "612345681",
+                "eva." + MARKER.toLowerCase() + "@mail.com"
+        );
+        int socio2Id = insertSocioDirect(
+                dni2,
+                "Iris " + MARKER,
+                "Leon " + MARKER,
+                "612345682",
+                "iris." + MARKER.toLowerCase() + "@mail.com"
+        );
+
+        insertPrestamoDirect(libroId, socio1Id, "2026-07-01", "2026-07-10", null);
+
+        try {
+            AccesoPrestamo.insertarPrestamo(libroId, socio2Id, "2026-07-02", "2026-07-11");
+            throw new AssertionError("se esperaba PrestamosException");
+        } catch (PrestamosException e) {
+            assertEquals(PrestamosException.ESTA_PRESTADO, e.getMessage().replace("Error: ", ""));
+        }
+    }
+
+    private static void testPrestamoSocioConPrestamoActivo() throws Exception {
+        String isbn1 = buildValidIsbn13(209);
+        String isbn2 = buildValidIsbn13(210);
+        String dni = buildValidDni(10000013);
+
+        int libro1Id = insertBookDirect(isbn1, "Libro Activo Socio 1 " + MARKER, "Autor Activo " + MARKER, 2024, 5.5f);
+        int libro2Id = insertBookDirect(isbn2, "Libro Activo Socio 2 " + MARKER, "Autor Activo " + MARKER, 2024, 5.5f);
+        int socioId = insertSocioDirect(
+                dni,
+                "Nora " + MARKER,
+                "Leon " + MARKER,
+                "612345683",
+                "nora." + MARKER.toLowerCase() + "@mail.com"
+        );
+
+        insertPrestamoDirect(libro1Id, socioId, "2026-08-01", "2026-08-10", null);
+
+        try {
+            AccesoPrestamo.insertarPrestamo(libro2Id, socioId, "2026-08-02", "2026-08-11");
+            throw new AssertionError("se esperaba PrestamosException");
+        } catch (PrestamosException e) {
+            assertEquals(PrestamosException.TIENE_PRESTADO, e.getMessage().replace("Error: ", ""));
+        }
     }
 
     private static void testPrestamoFechaFinAnterior() throws Exception {

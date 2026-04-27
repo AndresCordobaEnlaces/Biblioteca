@@ -11,8 +11,13 @@ import config.ConfigMySQL;
 import exceptions.BDException;
 import exceptions.SocioException;
 import models.Socio;
+import regex.FuncionesRegex;
 
 public class AccesoSocio {
+
+	private static boolean textoConContenido(String texto) {
+		return texto != null && !texto.trim().isEmpty();
+	}
 
 	/**
 	 * Comprueba si un socio tiene préstamos.
@@ -50,12 +55,32 @@ public class AccesoSocio {
 	 * INSERTAR
 	 */
 	public static boolean insertarSocio(String dni, String nombre, String domicilio, String telefono, String correo)
-			throws BDException {
+			throws BDException, SocioException {
 		Connection conexion = null;
 		PreparedStatement ps = null;
 		int filas = 0;
 
 		try {
+			if (!FuncionesRegex.dniBien(dni)) {
+				throw new SocioException(SocioException.ERROR_SOCIO_DNIINVALIDO);
+			}
+
+			if (!textoConContenido(nombre)) {
+				throw new SocioException(SocioException.ERROR_SOCIO_NOMBREVACIO);
+			}
+
+			if (!textoConContenido(domicilio)) {
+				throw new SocioException(SocioException.ERROR_SOCIO_DOMICILIOVACIO);
+			}
+
+			if (!FuncionesRegex.telefonoBien(telefono)) {
+				throw new SocioException(SocioException.ERROR_SOCIO_TELEFONOINVALIDO);
+			}
+
+			if (!FuncionesRegex.correoBien(correo)) {
+				throw new SocioException(SocioException.ERROR_SOCIO_CORREOINVALIDO);
+			}
+
 			conexion = ConfigMySQL.abrirConexion();
 
 			String query = "INSERT INTO socio (dni, nombre, domicilio, telefono, correo) VALUES (?, ?, ?, ?, ?)";

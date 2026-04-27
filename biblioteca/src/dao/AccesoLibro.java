@@ -10,8 +10,13 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import models.Libro;
+import regex.FuncionesRegex;
 
 public class AccesoLibro {
+
+    private static boolean textoConContenido(String texto) {
+        return texto != null && !texto.trim().isEmpty();
+    }
 
     /**
      * Limpia el ISBN para compararlo y guardarlo siempre igual.
@@ -107,6 +112,26 @@ public class AccesoLibro {
         int filas = 0;
 
         try {
+            if (!FuncionesRegex.isbnBien(isbnNormalizado)) {
+                throw new LibroException(LibroException.ERROR_LIBRO_ISBNINVALIDO);
+            }
+
+            if (!textoConContenido(titulo)) {
+                throw new LibroException(LibroException.ERROR_LIBRO_TITULOVACIO);
+            }
+
+            if (!textoConContenido(escritor)) {
+                throw new LibroException(LibroException.ERROR_LIBRO_ESCRITORVACIO);
+            }
+
+            if (!FuncionesRegex.anyoBien(anyo_publicacion)) {
+                throw new LibroException(LibroException.ERROR_LIBRO_ANYOINVALIDO);
+            }
+
+            if (puntuacion < 0 || puntuacion > 10) {
+                throw new LibroException(LibroException.ERROR_LIBRO_PUNTUACIONINVALIDA);
+            }
+
             conexion = ConfigMySQL.abrirConexion();
 
             if (existeISBN(isbnNormalizado)) {

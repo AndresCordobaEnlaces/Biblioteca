@@ -10,10 +10,15 @@ public class LibroException extends Exception {
     public static final String ERROR_NO_EXISTE = "No existe la tupla buscada";
     public static final String ERROR_NOLIBRO = "No existe ningun libro con ese codigo en la base de datos.";
     public static final String ERROR_LIBRO_ISBNEXISTE = "Ya existe un libro con ese ISBN en la base de datos.";
+    public static final String ERROR_LIBRO_ISBNINVALIDO = "El ISBN del libro no es valido.";
     public static final String ERROR_LIBRO_BDEmpty = "No se ha encontrado ningun libro en la base de datos.";
     public static final String ERROR_LIBRO_PRESTAMO = "El libro esta referenciado en un prestamo de la base de datos.";
     public static final String ERROR_LIBRO_NOESCRITOR = "No existe ningun libro con ese escritor en la base de datos.";
     public static final String ERROR_LIBRO_NOPRESTADO = "No existe ningun libro no prestado en la base de datos.";
+    public static final String ERROR_LIBRO_TITULOVACIO = "El titulo del libro no puede estar vacio.";
+    public static final String ERROR_LIBRO_ESCRITORVACIO = "El escritor del libro no puede estar vacio.";
+    public static final String ERROR_LIBRO_ANYOINVALIDO = "El anyo de publicacion no es valido.";
+    public static final String ERROR_LIBRO_PUNTUACIONINVALIDA = "La puntuacion del libro debe estar entre 0 y 10.";
     public static final String ERROR_LIBRO_BAJO_MEDIA =
             "No existe ningun libro por debajo de la media de prestamos.";
     public static final String ERROR_LIBRO_NODEVUELTO =

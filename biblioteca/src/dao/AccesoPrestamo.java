@@ -15,6 +15,7 @@ import exceptions.PrestamosException;
 import models.Libro;
 import models.Prestamo;
 import models.Socio;
+import regex.FuncionesRegex;
 
 public class AccesoPrestamo {
 
@@ -82,6 +83,10 @@ public class AccesoPrestamo {
         int filas = 0;
 
         try {
+            if (!FuncionesRegex.fechaBien(fechaInicio) || !FuncionesRegex.fechaBien(fechaFin)) {
+                throw new PrestamosException(PrestamosException.ERROR_FECHA_INVALIDA);
+            }
+
             DateTimeFormatter formato = DateTimeFormatter.ofPattern("yyyy-MM-dd");
             LocalDate inicio = LocalDate.parse(fechaInicio, formato);
             LocalDate fin = LocalDate.parse(fechaFin, formato);
@@ -142,6 +147,10 @@ public class AccesoPrestamo {
         int filas = 0;
 
         try {
+            if (!FuncionesRegex.fechaBien(fechaInicio) || !FuncionesRegex.fechaBien(fechaDevolucion)) {
+                throw new PrestamosException(PrestamosException.ERROR_FECHA_INVALIDA);
+            }
+
             DateTimeFormatter formato = DateTimeFormatter.ofPattern("yyyy-MM-dd");
             LocalDate inicio = LocalDate.parse(fechaInicio, formato);
             LocalDate devolucion = LocalDate.parse(fechaDevolucion, formato);

@@ -12,11 +12,14 @@ public class ManualTestRunner {
 
     public static void main(String[] args) {
         run("correo valido", () -> assertTrue(FuncionesRegex.correoBien("ana.lopez@example.com")));
+        run("correo valido con plus", () -> assertTrue(FuncionesRegex.correoBien("ana+test@example.com")));
         run("correo invalido sin dominio", () -> assertFalse(FuncionesRegex.correoBien("ana.lopez@")));
+        run("correo invalido con doble punto", () -> assertFalse(FuncionesRegex.correoBien("ana..lopez@example.com")));
         run("fecha valida", () -> assertTrue(FuncionesRegex.fechaBien("2026-04-27")));
         run("fecha invalida", () -> assertFalse(FuncionesRegex.fechaBien("2026-02-30")));
         run("anyo futuro invalido", () -> assertFalse(FuncionesRegex.anyoBien(3000)));
         run("isbn10 valido", () -> assertTrue(FuncionesRegex.isbnBien("0306406152")));
+        run("isbn10 valido con x minuscula", () -> assertTrue(FuncionesRegex.isbnBien("097522980x")));
         run("isbn13 valido", () -> assertTrue(FuncionesRegex.isbnBien("9780306406157")));
         run("isbn13 con checksum invalido", () -> assertFalse(FuncionesRegex.isbnBien("9780306406158")));
         run("dni valido", () -> assertTrue(FuncionesRegex.dniBien("12345678Z")));

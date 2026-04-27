@@ -5,7 +5,16 @@ import java.time.LocalDate;
 public class FuncionesRegex {
 
 	public static boolean correoBien(String correo) {
-		return correo != null && correo.matches("^[\\w.-]+@[\\w.-]+\\.[a-zA-Z]{2,}$");
+		if (correo == null)
+			return false;
+
+		String email = correo.trim();
+		return email.matches("^[A-Za-z0-9_+.-]+@[A-Za-z0-9.-]+\\.[a-zA-Z]{2,}$")
+				&& !email.contains("..")
+				&& !email.startsWith(".")
+				&& !email.endsWith(".")
+				&& !email.contains("@.")
+				&& !email.contains(".@");
 	}
 
 	public static boolean fechaBien(String fecha) {
@@ -29,7 +38,7 @@ public class FuncionesRegex {
 		if (isbn == null)
 			return false;
 
-		isbn = isbn.replace("-", "").replace(" ", "");
+		isbn = isbn.replace("-", "").replace(" ", "").toUpperCase();
 
 		if (isbn.matches("\\d{13}")) {
 			if (!(isbn.startsWith("978") || isbn.startsWith("979"))) {
