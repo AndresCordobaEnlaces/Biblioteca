@@ -44,7 +44,7 @@ public class Libro {
     @Override
     public String toString() {
         return String.format(
-                "Libro [Código: %d | ISBN: %s | Título: %s | Escritor: %s | Año: %d | Puntuación: %.1f]",
+                "Libro [Codigo: %d | ISBN: %s | Titulo: %s | Escritor: %s | Anyo: %d | Puntuacion: %.1f]",
                 codigo,
                 isbn,
                 titulo,

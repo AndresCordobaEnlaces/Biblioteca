@@ -29,10 +29,21 @@ public class FuncionesRegex {
 		if (isbn == null)
 			return false;
 
-		isbn = isbn.replace("-", "");
+		isbn = isbn.replace("-", "").replace(" ", "");
 
 		if (isbn.matches("\\d{13}")) {
-			return isbn.startsWith("978") || isbn.startsWith("979");
+			if (!(isbn.startsWith("978") || isbn.startsWith("979"))) {
+				return false;
+			}
+
+			int suma = 0;
+			for (int i = 0; i < 12; i++) {
+				int digito = isbn.charAt(i) - '0';
+				suma += (i % 2 == 0) ? digito : digito * 3;
+			}
+
+			int digitoControl = (10 - (suma % 10)) % 10;
+			return digitoControl == (isbn.charAt(12) - '0');
 		}
 
 		if (isbn.matches("\\d{9}[0-9X]")) {
