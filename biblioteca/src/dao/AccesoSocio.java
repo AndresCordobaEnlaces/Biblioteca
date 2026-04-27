@@ -304,15 +304,16 @@ public class AccesoSocio {
 
 			String query = """
 					SELECT s.codigo, s.dni, s.nombre, s.domicilio, s.telefono, s.correo
-					FROM prestamo p
-					JOIN socio s ON p.codigo_socio = s.codigo
+					FROM socio s
+					LEFT JOIN prestamo p ON p.codigo_socio = s.codigo
 					GROUP BY s.codigo, s.dni, s.nombre, s.domicilio, s.telefono, s.correo
-					HAVING COUNT(*) > (
+					HAVING COUNT(p.codigo_socio) > (
 					    SELECT AVG(conteo)
 					    FROM (
-					        SELECT COUNT(*) AS conteo
-					        FROM prestamo
-					        GROUP BY codigo_socio
+					        SELECT COUNT(p2.codigo_socio) AS conteo
+					        FROM socio s2
+					        LEFT JOIN prestamo p2 ON p2.codigo_socio = s2.codigo
+					        GROUP BY s2.codigo
 					    ) AS subconsulta
 					)
 					""";
@@ -326,7 +327,7 @@ public class AccesoSocio {
 			}
 
 			if (lista.isEmpty()) {
-				throw new SocioException(SocioException.ERROR_SOCIO_NO_TIENEN_PRESTAMO);
+				throw new SocioException(SocioException.ERROR_SOCIO_SOBRE_MEDIA);
 			}
 
 		} catch (SQLException e) {

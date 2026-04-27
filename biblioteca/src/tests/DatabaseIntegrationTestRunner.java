@@ -337,10 +337,18 @@ public class DatabaseIntegrationTestRunner {
 
     private static void testAmpliadoLibrosBajoMedia() throws Exception {
         LinkedHashMap<Libro, Integer> mapa = AccesoLibro.consultarLibroPrestadoInferiorMedia();
+        boolean contieneLibre = false;
+        boolean contieneTop = false;
         boolean contieneBajo = false;
         boolean contieneMedio = false;
 
         for (Libro libro : mapa.keySet()) {
+            if (libro.getCodigo() == libroLibreId) {
+                contieneLibre = true;
+            }
+            if (libro.getCodigo() == libroTopId) {
+                contieneTop = true;
+            }
             if (libro.getCodigo() == libroBajoId) {
                 contieneBajo = true;
             }
@@ -349,16 +357,34 @@ public class DatabaseIntegrationTestRunner {
             }
         }
 
-        assertTrue(contieneBajo);
-        assertTrue(contieneMedio);
+        assertTrue(contieneLibre);
+        assertFalse(contieneTop);
+        assertFalse(contieneBajo);
+        assertFalse(contieneMedio);
     }
 
     private static void testAmpliadoSociosSobreMedia() throws Exception {
         ArrayList<Socio> socios = AccesoSocio.sociosSobreMediaPrestamos();
         List<Socio> propios = filterSociosByMarker(socios);
+        boolean contieneTop = false;
+        boolean contieneBajo = false;
+        boolean contieneNunca = false;
 
-        assertEquals(1, propios.size());
-        assertEquals(socioTopDni, propios.get(0).getDni());
+        for (Socio socio : propios) {
+            if (socioTopDni.equals(socio.getDni())) {
+                contieneTop = true;
+            }
+            if (socioBajoDni.equals(socio.getDni())) {
+                contieneBajo = true;
+            }
+            if (socioNuncaDni.equals(socio.getDni())) {
+                contieneNunca = true;
+            }
+        }
+
+        assertTrue(contieneTop);
+        assertTrue(contieneBajo);
+        assertFalse(contieneNunca);
     }
 
     private static void testAmpliadoRankingLibros() throws Exception {
@@ -661,6 +687,12 @@ public class DatabaseIntegrationTestRunner {
     private static void assertTrue(boolean condition) {
         if (!condition) {
             throw new AssertionError("se esperaba true");
+        }
+    }
+
+    private static void assertFalse(boolean condition) {
+        if (condition) {
+            throw new AssertionError("se esperaba false");
         }
     }
 

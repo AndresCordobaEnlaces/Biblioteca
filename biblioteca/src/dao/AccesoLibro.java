@@ -468,10 +468,12 @@ public class AccesoLibro {
 
             String query =
                     "select l.codigo, l.isbn, l.titulo, l.escritor, l.anio_publicacion, l.puntuacion, count(p.codigo_libro) as veces_prestado " +
-                            "from libro l join prestamo p on l.codigo = p.codigo_libro " +
-                            "group by l.codigo " +
+                            "from libro l left join prestamo p on l.codigo = p.codigo_libro " +
+                            "group by l.codigo, l.isbn, l.titulo, l.escritor, l.anio_publicacion, l.puntuacion " +
                             "having count(p.codigo_libro) < (select avg(cantidad) " +
-                            "from (select count(*) as cantidad from prestamo group by codigo_libro) as prestamo_count);";
+                            "from (select count(p2.codigo_libro) as cantidad " +
+                            "from libro l2 left join prestamo p2 on l2.codigo = p2.codigo_libro " +
+                            "group by l2.codigo) as prestamo_count);";
 
             ps = conexion.prepareStatement(query);
 
@@ -492,7 +494,7 @@ public class AccesoLibro {
             }
 
             if (listaLibros.isEmpty()) {
-                throw new LibroException(LibroException.ERROR_LIBRO_BDEmpty);
+                throw new LibroException(LibroException.ERROR_LIBRO_BAJO_MEDIA);
             }
         } catch (SQLException e) {
             throw new BDException(BDException.ERROR_QUERY + e.getMessage());

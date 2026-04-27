@@ -14,6 +14,8 @@ public class LibroException extends Exception {
     public static final String ERROR_LIBRO_PRESTAMO = "El libro esta referenciado en un prestamo de la base de datos.";
     public static final String ERROR_LIBRO_NOESCRITOR = "No existe ningun libro con ese escritor en la base de datos.";
     public static final String ERROR_LIBRO_NOPRESTADO = "No existe ningun libro no prestado en la base de datos.";
+    public static final String ERROR_LIBRO_BAJO_MEDIA =
+            "No existe ningun libro por debajo de la media de prestamos.";
     public static final String ERROR_LIBRO_NODEVUELTO =
             "No existe ningun libro devuelto en esa fecha en la base de datos.";
 
