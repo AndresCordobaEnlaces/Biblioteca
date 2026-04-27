@@ -12,6 +12,7 @@ public class PrestamosException extends Exception {
 	public static final String TIENE_PRESTADO = "Ese socio ya tiene un libro prestado y no lo ha devuelto";
 	public static final String NO_EXISTE_LIBRO_SOCIO = "No existen libros o socios con esos datos";
 	public static final String NO_EXISTE_PRESTAMO = "No existe un prestamo con esos datos";
+	public static final String PRESTAMO_PENDIENTE = "No se puede eliminar porque sigue pendiente";
 	public static final String ERROR_PRESTAMOS_BD_VACIA = "No hay prestamos en la base de datos";
 	public static final String ERROR_PRESTAMOS_NO_DEVUELTOS = "No hay prestamos no devueltos en la base de datos";
 	public static final String ERROR_PRESTAMOS_FECHA = "No hay prestamos en esa fecha";

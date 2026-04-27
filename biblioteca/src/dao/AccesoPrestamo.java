@@ -196,7 +196,12 @@ public class AccesoPrestamo {
         try {
             conexion = ConfigMySQL.abrirConexion();
 
-            String query = "delete from prestamo where codigo_libro = ? and codigo_socio = ? and fecha_inicio = ?";
+            String query = "delete from prestamo "
+                    + "where codigo_libro = ? "
+                    + "and codigo_socio = ? "
+                    + "and fecha_inicio = ? "
+                    + "and fecha_devolucion is not null";
+
             ps = conexion.prepareStatement(query);
 
             ps.setInt(1, codigoLibro);
@@ -206,11 +211,20 @@ public class AccesoPrestamo {
             filas = ps.executeUpdate();
 
             if (filas == 0) {
-                throw new PrestamosException(PrestamosException.NO_EXISTE_PRESTAMO);
+                throw new PrestamosException(PrestamosException.PRESTAMO_PENDIENTE);
             }
+
         } catch (SQLException e) {
             throw new BDException(BDException.ERROR_QUERY + e.getMessage());
         } finally {
+            try {
+                if (ps != null) {
+                    ps.close();
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+
             if (conexion != null) {
                 ConfigMySQL.cerrarConexion(conexion);
             }
